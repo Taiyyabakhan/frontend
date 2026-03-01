@@ -5,15 +5,52 @@ import { assets } from "../assets/assets";
 import CartTotal from "../components/CartTotal";
 import { useNavigate } from 'react-router-dom';
 
-
-
 const Cart = () => {
   const navigate = useNavigate();
-
-
-  const {products, currency, cartItems, updateQuantity} = useContext(ShopContext);
-
+  const {products, currency, cartItems, updateQuantity, removeFromCart} = useContext(ShopContext);
   const [cartData, setCartData] = useState([]);
+  const [swipedItems, setSwipedItems] = useState(new Set());
+
+  // Touch handlers for swipe-to-delete
+  const handleTouchStart = (e, itemId) => {
+    const touch = e.touches[0];
+    const startX = touch.clientX;
+    
+    const handleTouchMove = (moveEvent) => {
+      const touch = moveEvent.touches[0];
+      const currentX = touch.clientX;
+      const diffX = startX - currentX;
+      
+      if (diffX > 50) { // Swiped left enough
+        setSwipedItems(prev => new Set(prev).add(itemId));
+      }
+    };
+    
+    const handleTouchEnd = () => {
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('touchend', handleTouchEnd);
+    };
+    
+    document.addEventListener('touchmove', handleTouchMove);
+    document.addEventListener('touchend', handleTouchEnd);
+  };
+
+  const handleSwipeDelete = (itemId, volume) => {
+    removeFromCart(itemId, volume);
+    setSwipedItems(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(`${itemId}-${volume}`);
+      return newSet;
+    });
+  };
+
+  const handleSwipeCancel = (itemId) => {
+    setSwipedItems(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(itemId);
+      return newSet;
+    });
+  };
 
   useEffect(()=>{
     const tempData = [];
@@ -40,12 +77,20 @@ const Cart = () => {
         {
           cartData.map((item,index)=>{
             const productData = products.find(product => product._id === item._id);
+            const itemKey = `${item._id}-${item.volume}`;
+            const isSwiped = swipedItems.has(itemKey);
 
             return (
-            <div key={index} className="py-4 border-t border-b border-gray-300 text-gray-700 grid [grid-template-columns:4fr_2fr_0.5fr] items-center gap-4">
-              <div className='flex items-start gap-6'>
-                  <img className="w-40 h-40 object-cover rounded" src={productData.image[0]} alt="" />
-                  <div>
+            <div 
+              key={index} 
+              className={`py-4 border-t border-b border-gray-300 text-gray-700 grid grid-cols-1 sm:grid-cols-[4fr_2fr_0.5fr] items-center gap-4 relative overflow-hidden transition-transform duration-300 ${
+                isSwiped ? '-translate-x-16' : 'translate-x-0'
+              }`}
+              onTouchStart={(e) => handleTouchStart(e, itemKey)}
+            >
+              <div className='flex items-start gap-6 sm:col-span-1'>
+                  <img className="w-24 sm:w-40 h-24 sm:h-40 object-cover rounded" src={productData.image[0]} alt="" />
+                  <div className='flex-1'>
                     <p className='text-xs sm:text-lg font-medium'>{productData.name}</p>
                     <div className="flex items-center gap-5 mt-2">
                       <p>Price: {currency}{productData.price}</p>  
@@ -53,13 +98,61 @@ const Cart = () => {
                     </div>
                   </div>
                 </div>
-                <input onChange={(e)=> e.target.value === '' || e.target.value === '0' ? null : updateQuantity(item._id, item.volume,Number(e.target.value))} className="border max-w-10 sm:max-w-20 px-1 sm:px-2 pt-1" type="number" min={1} defaultValue={item.quantity}  />
-                <img onClick={()=>updateQuantity(item._id, item.volume,0)} className="w-4 mr-4 sm:w-5 cursor-pointer" src={assets.bin_icon} alt="" />
+                
+                {/* Enhanced Quantity Controls */}
+                <div className='flex items-center justify-center sm:col-span-1'>
+                  <div className='flex items-center border border-gray-300 rounded-lg'>
+                    <button 
+                      onClick={() => updateQuantity(item._id, item.volume, item.quantity - 1)}
+                      className='w-8 h-8 flex items-center justify-center hover:bg-gray-100 transition-colors'
+                      disabled={item.quantity <= 1}
+                    >
+                      -
+                    </button>
+                    <span className='w-12 text-center font-medium'>{item.quantity}</span>
+                    <button 
+                      onClick={() => updateQuantity(item._id, item.volume, item.quantity + 1)}
+                      className='w-8 h-8 flex items-center justify-center hover:bg-gray-100 transition-colors'
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Delete Button */}
+                <div className='flex items-center justify-end sm:col-span-1'>
+                  <button 
+                    onClick={() => removeFromCart(item._id, item.volume)}
+                    className='p-2 hover:bg-red-50 rounded-lg transition-colors'
+                  >
+                    <img className="w-4 sm:w-5" src={assets.bin_icon} alt="Delete" />
+                  </button>
+                </div>
+
+                {/* Swipe to Delete Indicator (Mobile) */}
+                <div className={`absolute right-0 top-0 bottom-0 w-16 bg-red-500 flex items-center justify-center text-white transition-opacity duration-300 ${
+                  isSwiped ? 'opacity-100' : 'opacity-0'
+                }`}>
+                  <button 
+                    onClick={() => handleSwipeDelete(item._id, item.volume)}
+                    className='p-2'
+                  >
+                    <img className="w-5" src={assets.bin_icon} alt="Delete" />
+                  </button>
+                </div>
+
+                {/* Cancel Swipe Button */}
+                {isSwiped && (
+                  <div 
+                    onClick={() => handleSwipeCancel(itemKey)}
+                    className='absolute left-0 top-0 bottom-0 w-16 bg-gray-500 flex items-center justify-center text-white'
+                  >
+                    <span className='text-xs'>Cancel</span>
+                  </div>
+                )}
               </div>
             )
-          }
-          
-          )
+          })
         }
       </div>
       <div className="flex justify-end my-20">

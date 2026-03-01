@@ -3,19 +3,23 @@ import { useParams } from 'react-router-dom';
 import { ShopContext } from '../context/ShopContext';
 import { assets } from '../assets/assets';
 import Related_product from "../components/Related_product";
+import RecentlyViewed from "../components/RecentlyViewed";
 
 const Product = () => {
   const { productId } = useParams();
-  const { products, currency, addToCart } = useContext(ShopContext);
+  const { products, currency, addToCart, addToRecentlyViewed } = useContext(ShopContext);
   const [productData, setProductData] = useState(null);
   const [image, setImage] = useState('');
   const [volume, setVolume] = useState('')
 
   const fetchProductData = () => {
     const product = products.find(item => item._id === productId);
+    
     if (product) {
       setProductData(product);
       setImage(product.image[0]);
+      // Track recently viewed
+      addToRecentlyViewed(productId);
     }
   };
 
@@ -91,6 +95,9 @@ const Product = () => {
       </div>
       {/*display related products*/}
       <Related_product category={productData.category} subCategory= {productData.subCategory} />
+      
+      {/* Recently Viewed Products */}
+      <RecentlyViewed />
     </div>
   );
 };

@@ -3,9 +3,6 @@ import {products} from "../assets/assets";
 import { toast } from "react-toastify";
 import { useNavigate } from 'react-router-dom';
 
-
-
-
 export const ShopContext = createContext();
 
 const ShopContextProvider = (props) => {
@@ -14,8 +11,193 @@ const ShopContextProvider = (props) => {
     const delivery_fee = 10;
     const [search, setSearch] = useState('');
     const [showSearch, setShowSearch] = useState(false);
-    const [cartItems, setCartItems] = useState({});
+    const [cartItems, setCartItems] = useState(() => {
+    // Load cart from localStorage on initial load
+    const savedCart = localStorage.getItem('cartItems');
+    return savedCart ? JSON.parse(savedCart) : {};
+});
+const [wishlist, setWishlist] = useState(() => {
+    // Load wishlist from localStorage on initial load
+    const savedWishlist = localStorage.getItem('wishlist');
+    return savedWishlist ? JSON.parse(savedWishlist) : [];
+});
+const [recentlyViewed, setRecentlyViewed] = useState(() => {
+    // Load recently viewed from localStorage on initial load
+    const saved = localStorage.getItem('recentlyViewed');
+    return saved ? JSON.parse(saved) : [];
+});
+const [compareProducts, setCompareProducts] = useState(() => {
+    // Load comparison list from localStorage on initial load
+    const saved = localStorage.getItem('compareProducts');
+    return saved ? JSON.parse(saved) : [];
+});
+    const [user, setUser] = useState(null);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
     const navigate = useNavigate()
+
+    const login = async (email, password) => {
+        try {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            const foundUser = users.find(u => u.email === email && u.password === password);
+            
+            if (foundUser) {
+                setUser(foundUser);
+                setIsAuthenticated(true);
+                localStorage.setItem('currentUser', JSON.stringify(foundUser));
+                toast.success('Login successful!');
+                return true;
+            } else {
+                toast.error('Invalid email or password');
+                return false;
+            }
+        } catch (error) {
+            toast.error('Login failed');
+            return false;
+        }
+    };
+
+    const signup = async (name, email, password) => {
+        try {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            
+            if (users.find(u => u.email === email)) {
+                toast.error('User already exists with this email');
+                return false;
+            }
+
+            const newUser = {
+                id: Date.now().toString(),
+                name,
+                email,
+                password,
+                image: null, 
+                createdAt: new Date().toISOString()
+            };
+
+            users.push(newUser);
+            localStorage.setItem('users', JSON.stringify(users));
+            
+            toast.success('Account created successfully!');
+            return true;
+        } catch (error) {
+            toast.error('Signup failed');
+            return false;
+        }
+    };
+
+    const logout = () => {
+        setUser(null);
+        setIsAuthenticated(false);
+        localStorage.removeItem('currentUser');
+        toast.success('Logged out successfully');
+        navigate('/login');
+    };
+
+    const updateUser = (updatedUserData) => {
+        setUser(updatedUserData);
+        localStorage.setItem('currentUser', JSON.stringify(updatedUserData));
+    };
+
+    const checkAuthStatus = () => {
+        const currentUser = localStorage.getItem('currentUser');
+        if (currentUser) {
+            setUser(JSON.parse(currentUser));
+            setIsAuthenticated(true);
+        }
+    };
+
+    useEffect(() => {
+        checkAuthStatus();
+    }, []);
+
+    // Save cart to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('cartItems', JSON.stringify(cartItems));
+    }, [cartItems]);
+
+    // Save wishlist to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('wishlist', JSON.stringify(wishlist));
+    }, [wishlist]);
+
+    // Save recently viewed to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('recentlyViewed', JSON.stringify(recentlyViewed));
+    }, [recentlyViewed]);
+
+    // Save comparison list to localStorage whenever it changes
+    useEffect(() => {
+        localStorage.setItem('compareProducts', JSON.stringify(compareProducts));
+    }, [compareProducts]);
+
+    // Recently viewed functions
+    const addToRecentlyViewed = (productId) => {
+        setRecentlyViewed(prev => {
+            const filtered = prev.filter(id => id !== productId);
+            return [productId, ...filtered].slice(0, 10); // Keep max 10 items
+        });
+    };
+
+    // Comparison functions
+    const addToCompare = (productId) => {
+        if (compareProducts.includes(productId)) {
+            return; // Already in comparison
+        }
+        if (compareProducts.length >= 4) {
+            toast.error('You can compare up to 4 products at a time');
+            return;
+        }
+        setCompareProducts(prev => [...prev, productId]);
+        toast.success('Added to comparison');
+    };
+
+    const removeFromCompare = (productId) => {
+        setCompareProducts(prev => prev.filter(id => id !== productId));
+    };
+
+    const clearCompare = () => {
+        setCompareProducts([]);
+    };
+
+    const isInCompare = (productId) => {
+        return compareProducts.includes(productId);
+    };
+
+    const toggleCompare = (productId) => {
+        if (isInCompare(productId)) {
+            removeFromCompare(productId);
+        } else {
+            addToCompare(productId);
+        }
+    };
+
+    // Wishlist functions
+    const addToWishlist = (productId) => {
+        setWishlist(prev => {
+            if (!prev.includes(productId)) {
+                return [...prev, productId];
+            }
+            return prev;
+        });
+        toast.success('Added to wishlist!');
+    };
+
+    const removeFromWishlist = (productId) => {
+        setWishlist(prev => prev.filter(id => id !== productId));
+        toast.success('Removed from wishlist!');
+    };
+
+    const isInWishlist = (productId) => {
+        return wishlist.includes(productId);
+    };
+
+    const toggleWishlist = (productId) => {
+        if (isInWishlist(productId)) {
+            removeFromWishlist(productId);
+        } else {
+            addToWishlist(productId);
+        }
+    };
 
     const addToCart = async (itemId, volume) => {
 
@@ -62,11 +244,30 @@ const ShopContextProvider = (props) => {
         
         let cartData = structuredClone(cartItems);
 
-        cartData[itemId][volume] = quantity;
+        if (quantity <= 0) {
+            // Remove the item if quantity is 0 or less
+            delete cartData[itemId][volume];
+            if (Object.keys(cartData[itemId]).length === 0) {
+                delete cartData[itemId];
+            }
+        } else {
+            cartData[itemId][volume] = quantity;
+        }
 
         setCartItems(cartData);
+    }
 
-
+    const removeFromCart = async (itemId, volume) => {
+        let cartData = structuredClone(cartItems);
+        
+        if (cartData[itemId]) {
+            delete cartData[itemId][volume];
+            if (Object.keys(cartData[itemId]).length === 0) {
+                delete cartData[itemId];
+            }
+        }
+        
+        setCartItems(cartData);
     }
 
     const getCartAmount =() => {
@@ -91,8 +292,12 @@ const ShopContextProvider = (props) => {
         products,currency,delivery_fee,
         search, setSearch, showSearch, setShowSearch,
         cartItems, addToCart,
-        getCartCount, updateQuantity,
-        getCartAmount, navigate
+        getCartCount, updateQuantity, removeFromCart,
+        getCartAmount, navigate,
+        user, isAuthenticated, login, signup, logout, updateUser,
+        wishlist, addToWishlist, removeFromWishlist, isInWishlist, toggleWishlist,
+        recentlyViewed, addToRecentlyViewed,
+        compareProducts, addToCompare, removeFromCompare, clearCompare, isInCompare, toggleCompare
     }
     return(
         <ShopContext.Provider value={value}>
