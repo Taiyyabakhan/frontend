@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router-dom';
 
 const Cart = () => {
   const navigate = useNavigate();
-  const {products, currency, cartItems, updateQuantity, removeFromCart} = useContext(ShopContext);
+  const {products, currency, cartItems, cartItemTimes, updateQuantity, removeFromCart} = useContext(ShopContext);
   const [cartData, setCartData] = useState([]);
   const [swipedItems, setSwipedItems] = useState(new Set());
 
@@ -60,20 +60,33 @@ const Cart = () => {
             tempData.push({
               _id: items,
               volume:item,
-              quantity:cartItems[items][item]
+              quantity:cartItems[items][item],
+              timestamp: cartItemTimes[`${items}-${item}`] || 0
             })
           } 
       }
     }
+    // Sort by timestamp (latest first)
+    tempData.sort((a, b) => b.timestamp - a.timestamp);
     setCartData(tempData);
-  },[cartItems])
+  },[cartItems, cartItemTimes])
 
   return (
     <div className='border-t pt-14'>
       <div className='text-2xl  mb-3'>
         <Title  text1={'YOUR'} text2={'CART'}/>
       </div>
-      <div>
+      
+      <div className='bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden'>
+        {/* Cart Header */}
+        <div className='hidden lg:flex pb-4 border-b border-gray-200 text-sm font-semibold text-gray-600 px-4'>
+          <div className='flex-1'>Product</div>
+          <div className='w-24 text-center'>Quantity</div>
+          <div className='w-24 text-center'>Subtotal</div>
+          <div className='w-24 text-center'>Action</div>
+        </div>
+        
+        <div>
         {
           cartData.map((item,index)=>{
             const productData = products.find(product => product._id === item._id);
@@ -83,47 +96,55 @@ const Cart = () => {
             return (
             <div 
               key={index} 
-              className={`py-4 border-t border-b border-gray-300 text-gray-700 grid grid-cols-1 sm:grid-cols-[4fr_2fr_0.5fr] items-center gap-4 relative overflow-hidden transition-transform duration-300 ${
+              className={`py-6 border-b border-gray-200 text-gray-700 flex flex-col lg:flex-row gap-4 items-center relative overflow-hidden transition-transform duration-300 px-4 ${
                 isSwiped ? '-translate-x-16' : 'translate-x-0'
               }`}
               onTouchStart={(e) => handleTouchStart(e, itemKey)}
             >
-              <div className='flex items-start gap-6 sm:col-span-1'>
-                  <img className="w-24 sm:w-40 h-24 sm:h-40 object-cover rounded" src={productData.image[0]} alt="" />
-                  <div className='flex-1'>
-                    <p className='text-xs sm:text-lg font-medium'>{productData.name}</p>
-                    <div className="flex items-center gap-5 mt-2">
-                      <p>Price: {currency}{productData.price}</p>  
-                      <p className="px-2 sm:px-3 sm:py-1 border bg-slate-100">{item.volume}</p>
+              {/* Product Info */}
+              <div className='flex-1 flex items-center gap-4 min-w-0'>
+                  <img className="w-16 h-16 lg:w-20 lg:h-20 object-cover rounded-lg flex-shrink-0" src={productData.image[0]} alt="" />
+                  <div className='flex-1 min-w-0'>
+                    <p className='text-sm lg:text-base font-medium truncate'>{productData.name}</p>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 mt-2">
+                      <p className="text-sm text-gray-600">Price: {currency}{productData.price}</p>  
+                      <p className="text-xs sm:text-sm px-2 py-1 border bg-slate-100 rounded text-center w-fit">{item.volume}</p>
                     </div>
                   </div>
                 </div>
                 
-                {/* Enhanced Quantity Controls */}
-                <div className='flex items-center justify-center sm:col-span-1'>
-                  <div className='flex items-center border border-gray-300 rounded-lg'>
+                {/* Quantity Controls */}
+                <div className='w-24 flex items-center justify-center'>
+                  <div className='flex items-center border border-gray-300 rounded-lg overflow-hidden'>
                     <button 
                       onClick={() => updateQuantity(item._id, item.volume, item.quantity - 1)}
-                      className='w-8 h-8 flex items-center justify-center hover:bg-gray-100 transition-colors'
+                      className='w-8 h-8 flex items-center justify-center hover:bg-gray-100 transition-colors border-r border-gray-300'
                       disabled={item.quantity <= 1}
                     >
                       -
                     </button>
-                    <span className='w-12 text-center font-medium'>{item.quantity}</span>
+                    <span className='w-12 text-center font-medium text-sm'>{item.quantity}</span>
                     <button 
                       onClick={() => updateQuantity(item._id, item.volume, item.quantity + 1)}
-                      className='w-8 h-8 flex items-center justify-center hover:bg-gray-100 transition-colors'
+                      className='w-8 h-8 flex items-center justify-center hover:bg-gray-100 transition-colors border-l border-gray-300'
                     >
                       +
                     </button>
                   </div>
                 </div>
                 
+                {/* Subtotal */}
+                <div className='w-24 flex items-center justify-center'>
+                  <p className='text-sm lg:text-base font-semibold text-gray-900'>
+                    {currency}{(productData.price * item.quantity).toFixed(2)}
+                  </p>
+                </div>
+                
                 {/* Delete Button */}
-                <div className='flex items-center justify-end sm:col-span-1'>
+                <div className='w-24 flex items-center justify-center'>
                   <button 
                     onClick={() => removeFromCart(item._id, item.volume)}
-                    className='p-2 hover:bg-red-50 rounded-lg transition-colors'
+                    className='p-2 hover:bg-red-50 rounded-lg transition-colors text-red-500 hover:text-red-700'
                   >
                     <img className="w-4 sm:w-5" src={assets.bin_icon} alt="Delete" />
                   </button>
@@ -154,6 +175,7 @@ const Cart = () => {
             )
           })
         }
+        </div>
       </div>
       <div className="flex justify-end my-20">
         <div className="w-full sm:w-[450px]">

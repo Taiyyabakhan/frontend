@@ -16,6 +16,11 @@ const ShopContextProvider = (props) => {
     const savedCart = localStorage.getItem('cartItems');
     return savedCart ? JSON.parse(savedCart) : {};
 });
+const [cartItemTimes, setCartItemTimes] = useState(() => {
+    // Load cart item timestamps from localStorage on initial load
+    const savedTimes = localStorage.getItem('cartItemTimes');
+    return savedTimes ? JSON.parse(savedTimes) : {};
+});
 const [wishlist, setWishlist] = useState(() => {
     // Load wishlist from localStorage on initial load
     const savedWishlist = localStorage.getItem('wishlist');
@@ -30,6 +35,11 @@ const [compareProducts, setCompareProducts] = useState(() => {
     // Load comparison list from localStorage on initial load
     const saved = localStorage.getItem('compareProducts');
     return saved ? JSON.parse(saved) : [];
+});
+const [orders, setOrders] = useState(() => {
+    // Load orders from localStorage on initial load
+    const savedOrders = localStorage.getItem('orders');
+    return savedOrders ? JSON.parse(savedOrders) : [];
 });
     const [user, setUser] = useState(null);
     const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -115,6 +125,11 @@ const [compareProducts, setCompareProducts] = useState(() => {
         localStorage.setItem('cartItems', JSON.stringify(cartItems));
     }, [cartItems]);
 
+    // Save cart item timestamps to localStorage whenever they change
+    useEffect(() => {
+        localStorage.setItem('cartItemTimes', JSON.stringify(cartItemTimes));
+    }, [cartItemTimes]);
+
     // Save wishlist to localStorage whenever it changes
     useEffect(() => {
         localStorage.setItem('wishlist', JSON.stringify(wishlist));
@@ -129,6 +144,11 @@ const [compareProducts, setCompareProducts] = useState(() => {
     useEffect(() => {
         localStorage.setItem('compareProducts', JSON.stringify(compareProducts));
     }, [compareProducts]);
+
+    // Save orders to localStorage whenever they change
+    useEffect(() => {
+        localStorage.setItem('orders', JSON.stringify(orders));
+    }, [orders]);
 
     // Recently viewed functions
     const addToRecentlyViewed = (productId) => {
@@ -206,22 +226,32 @@ const [compareProducts, setCompareProducts] = useState(() => {
             return;
         }
 
-
         let cartData = structuredClone(cartItems);
+        let timesData = structuredClone(cartItemTimes);
 
         if(cartData[itemId]){
             if (cartData[itemId][volume]){
                 cartData[itemId][volume] += 1;
+                // Update timestamp to bring item to top
+                timesData[`${itemId}-${volume}`] = Date.now();
+                toast.success('Item quantity updated!');
             }
             else{
                 cartData[itemId][volume] = 1;
+                // Add timestamp for new volume
+                timesData[`${itemId}-${volume}`] = Date.now();
+                toast.success('Item added to cart!');
             }
         }
         else{
             cartData[itemId] = {};
             cartData[itemId][volume] = 1;
+            // Add timestamp for new item
+            timesData[`${itemId}-${volume}`] = Date.now();
+            toast.success('Item added to cart!');
         }
-        setCartItems(cartData); 
+        setCartItems(cartData);
+        setCartItemTimes(timesData);
 
     }
     const getCartCount = () => {
@@ -288,16 +318,67 @@ const [compareProducts, setCompareProducts] = useState(() => {
         return totalAmount;
     }
 
+    const createOrder = (deliveryInfo, paymentMethod) => {
+        // Get current cart items
+        const orderItems = [];
+        for(const items in cartItems){
+            for(const item in cartItems[items]){
+                if (cartItems[items][item] > 0){
+                    const product = products.find(p => p._id === items);
+                    if (product) {
+                        orderItems.push({
+                            productId: items,
+                            name: product.name,
+                            image: product.image[0],
+                            price: product.price,
+                            volume: item,
+                            quantity: cartItems[items][item],
+                            totalPrice: product.price * cartItems[items][item]
+                        });
+                    }
+                }
+            }
+        }
+
+        if (orderItems.length === 0) {
+            toast.error('Your cart is empty');
+            return null;
+        }
+
+        // Create order object
+        const newOrder = {
+            id: Date.now().toString(),
+            items: orderItems,
+            deliveryInfo,
+            paymentMethod,
+            totalAmount: orderItems.reduce((total, item) => total + item.totalPrice, 0) + delivery_fee,
+            status: 'Processing',
+            orderDate: new Date().toISOString(),
+            estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days from now
+        };
+
+        // Add order to orders list
+        setOrders(prev => [newOrder, ...prev]);
+
+        // Clear cart
+        setCartItems({});
+        setCartItemTimes({});
+
+        toast.success('Order placed successfully!');
+        return newOrder;
+    }
+
     const value = {
         products,currency,delivery_fee,
         search, setSearch, showSearch, setShowSearch,
-        cartItems, addToCart,
+        cartItems, cartItemTimes, addToCart,
         getCartCount, updateQuantity, removeFromCart,
         getCartAmount, navigate,
         user, isAuthenticated, login, signup, logout, updateUser,
         wishlist, addToWishlist, removeFromWishlist, isInWishlist, toggleWishlist,
         recentlyViewed, addToRecentlyViewed,
-        compareProducts, addToCompare, removeFromCompare, clearCompare, isInCompare, toggleCompare
+        compareProducts, addToCompare, removeFromCompare, clearCompare, isInCompare, toggleCompare,
+        orders, createOrder
     }
     return(
         <ShopContext.Provider value={value}>

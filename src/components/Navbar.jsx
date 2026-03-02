@@ -9,7 +9,7 @@ const Navbar = () => {
   const [showCartPreview, setShowCartPreview] = useState(false);
   const navigate = useNavigate();
 
-  const {setShowSearch, getCartCount, user, isAuthenticated, logout, cartItems, products, updateQuantity, removeFromCart, wishlist, isInWishlist, toggleWishlist} = useContext(ShopContext);
+  const {setShowSearch, getCartCount, user, isAuthenticated, logout, cartItems, cartItemTimes, products, updateQuantity, removeFromCart, wishlist, isInWishlist, toggleWishlist} = useContext(ShopContext);
   const { darkMode, toggleDarkMode } = useContext(ThemeContext);
 
   // Get cart items for preview
@@ -25,12 +25,15 @@ const Navbar = () => {
               ...product,
               volume,
               quantity,
-              totalPrice: product.price * quantity
+              totalPrice: product.price * quantity,
+              timestamp: cartItemTimes[`${itemId}-${volume}`] || 0
             });
           }
         });
       }
     });
+    // Sort by timestamp (latest first)
+    items.sort((a, b) => b.timestamp - a.timestamp);
     return items;
   };
 
@@ -169,14 +172,14 @@ const Navbar = () => {
                           <img 
                             src={item.image[0]} 
                             alt={item.name} 
-                            className='w-12 h-12 object-cover rounded'
+                            className='w-12 h-12 object-cover rounded flex-shrink-0'
                           />
-                          <div className='flex-1'>
-                            <p className='text-sm font-medium truncate'>{item.name}</p>
+                          <div className='flex-1 min-w-0'>
+                            <p className='text-sm font-medium truncate' title={item.name}>{item.name}</p>
                             <p className='text-xs text-gray-500'>{item.volume}</p>
                             <p className='text-sm font-semibold'>${item.totalPrice}</p>
                           </div>
-                          <div className='flex items-center gap-1'>
+                          <div className='flex items-center gap-1 flex-shrink-0'>
                             <button 
                               onClick={() => handleQuantityChange(item._id, item.volume, item.quantity - 1)}
                               className='w-6 h-6 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100'
