@@ -1,6 +1,5 @@
 import React, { useState, useContext } from 'react';
 import { ShopContext } from '../context/ShopContext';
-import { ThemeContext } from '../context/ThemeContext';
 import { assets} from '../assets/assets'
 import {NavLink, Link, useNavigate} from 'react-router-dom'
 
@@ -10,7 +9,6 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const {setShowSearch, getCartCount, user, isAuthenticated, logout, cartItems, cartItemTimes, products, updateQuantity, removeFromCart, wishlist, isInWishlist, toggleWishlist} = useContext(ShopContext);
-  const { darkMode, toggleDarkMode } = useContext(ThemeContext);
 
   // Get cart items for preview
   const getCartItems = () => {
@@ -50,11 +48,12 @@ const Navbar = () => {
   };
 
   return (
-    <div className='flex items-center justify-between py-5 font-medium'>
+    <>
+      <div className='flex items-center justify-between py-4 px-4 sm:px-6 lg:px-8 font-medium border-b'>
 
-      <Link to='/'><img src={assets.logo} className='w-36' alt="" /></Link>
+      <Link to='/'><img src={assets.logo} className='w-28 sm:w-32 lg:w-36' alt="" /></Link>
 
-      <ul className='hidden sm:flex gap-5 text-sm text-gray-700 '>
+      <ul className='hidden lg:flex gap-6 text-sm text-gray-700'>
         <NavLink to='/' className='flex flex-col items-center gap-1'>
           <p>HOME</p>
           <hr className='w-2/4 border-none h-[1.5px] bg-gray-700 hidden' />
@@ -77,7 +76,7 @@ const Navbar = () => {
         </NavLink>
 
       </ul>
-      <div className='flex items-center gap-6'>
+      <div className='flex items-center gap-4 sm:gap-6'>
         <img onClick={()=>setShowSearch(true) } src={assets.search_icon} className='w-5 cursor-pointer' alt="" />
 
         <div className='group relative'>
@@ -111,27 +110,6 @@ const Navbar = () => {
             </div>
           </div>
         </div>
-
-        {/* Dark Mode Toggle */}
-        <button
-          onClick={toggleDarkMode}
-          className='relative cursor-pointer group'
-          title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-        >
-          <div className='relative cursor-pointer group'>
-            {darkMode ? (
-              // Sun icon for light mode
-              <svg className="w-5 min-w-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            ) : (
-              // Moon icon for dark mode
-              <svg className="w-5 min-w-5 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
-            )}
-          </div>
-        </button>
 
         {/* Wishlist Icon */}
         <Link to='/wishlist' className='relative'>
@@ -235,24 +213,93 @@ const Navbar = () => {
             </div>
           </div>
         </div>
-        <img  onClick={()=>setVisible(true)} src={assets.menu_icon} className='w-5 cursor-pointer sm:hidden' alt="" />
+        <img  
+          onClick={()=>setVisible(true)} 
+          src={assets.menu_icon} 
+          className='w-5 cursor-pointer lg:hidden' 
+          alt="" 
+        />
+      </div>
 
-         {/*sidebar menu for small screens responsive*/} 
-
-        <div className={`absolute top-0 right-0 bottom-0 overflow-hidden bg-white transition-all ${visible ? 'w-full' : 'w-0'}`}>
-          <div className='flex flex-col text-gray-600'>
-            <div onClick={()=>setVisible(false)} className='flex items-center gap-4 p-3'>
-              <img className='h-4 rotate-180' src={assets.dropdown_icon} alt="" />
-              <p>Back</p>
-            </div>
-            <NavLink onClick={()=>setVisible(false)} className='py-2 pl-6 border' to='/'>HOME</NavLink>
-            <NavLink onClick={()=>setVisible(false)}className='py-2 pl-6 border' to='/collection'>COLLECTION</NavLink>
-            <NavLink onClick={()=>setVisible(false)}className='py-2 pl-6 border' to='/about'>ABOUT</NavLink>
-            <NavLink onClick={()=>setVisible(false)}className='py-2 pl-6 border' to='/contact'>CONTACT</NavLink>
-            <NavLink onClick={()=>setVisible(false)}className='py-2 pl-6 border' to='/shop'>SHOP</NavLink>
+      {/*sidebar menu for small screens responsive*/} 
+      <div className={`fixed top-0 right-0 h-full w-64 sm:w-72 bg-white shadow-2xl transition-transform duration-300 z-50 lg:hidden ${visible ? 'translate-x-0' : 'translate-x-full'}`}>
+        <div className='flex flex-col h-full'>
+          <div className='flex items-center justify-between p-4 border-b'>
+            <h2 className='text-lg font-semibold'>Menu</h2>
+            <button onClick={()=>setVisible(false)} className='p-2 hover:bg-gray-100 rounded-lg'>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
           </div>
+          
+          <nav className='flex-1 overflow-y-auto'>
+            <NavLink 
+              onClick={()=>setVisible(false)} 
+              className='flex items-center px-4 py-3 border-b hover:bg-gray-50 transition-colors' 
+              to='/'
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              HOME
+            </NavLink>
+            
+            <NavLink 
+              onClick={()=>setVisible(false)} 
+              className='flex items-center px-4 py-3 border-b hover:bg-gray-50 transition-colors' 
+              to='/collection'
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+              </svg>
+              COLLECTION
+            </NavLink>
+            
+            <NavLink 
+              onClick={()=>setVisible(false)} 
+              className='flex items-center px-4 py-3 border-b hover:bg-gray-50 transition-colors' 
+              to='/shop'
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              SHOP
+            </NavLink>
+            
+            <NavLink 
+              onClick={()=>setVisible(false)} 
+              className='flex items-center px-4 py-3 border-b hover:bg-gray-50 transition-colors' 
+              to='/about'
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              ABOUT
+            </NavLink>
+            
+            <NavLink 
+              onClick={()=>setVisible(false)} 
+              className='flex items-center px-4 py-3 border-b hover:bg-gray-50 transition-colors' 
+              to='/contact'
+            >
+              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              CONTACT
+            </NavLink>
+          </nav>
         </div>
       </div>
+
+      {/* Overlay */}
+      {visible && (
+        <div 
+          className='fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden'
+          onClick={() => setVisible(false)}
+        />
+      )}
+    </>
   )
 }
 
