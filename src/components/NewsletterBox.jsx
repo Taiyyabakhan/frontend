@@ -10,7 +10,7 @@ const NewsletterBox = () => {
     <div className='text-center px-4'>
       <p className='text-2xl font-medium text-gray-800'>Subscribe now & get 20% off</p>
       <p className='text-gray-400 mt-3'>
-        Lorem ipsum dolor sit amet consectetur adipisicing elit. Aspernatur omnis laborum veniam odio nisi nulla saepe accusamus nihil quibusdam quasi dignissimos voluptas
+        Experience skincare redefined. Subscribe for expert beauty insights and exclusive Forever Youm rewards.
       </p>
 
       <form onSubmit={onSubmitHandler} className='w-full sm:w-2/3 flex items-center gap-3 mx-auto my-6 border pl-3 rounded overflow-hidden'>

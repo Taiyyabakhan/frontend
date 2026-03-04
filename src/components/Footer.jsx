@@ -8,7 +8,7 @@ const Footer = () => {
         <div>
             <img src={assets.logo} className='mb-5 w-32' alt="" />
             <p className='w-full md:w-2/3 text-gray-600'>
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ducimus qui vitae eum quaerat saepe consequuntur, dolorum explicabo inventore repellat voluptates est, unde, dolor animi eaque nihil voluptatibus cumque consequatur provident.
+                Join the Forever Youm community to be the first to receive skincare tips, exclusive launches, and special offers.
             </p>
         </div>
         <div>
